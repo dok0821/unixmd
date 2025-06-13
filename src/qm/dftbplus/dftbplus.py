@@ -10,7 +10,6 @@ class DFTBplus(QM_calculator):
         :param object molecule: Molecule object
         :param string sk_path: Path for Slater-Koster files
         :param string install_path: Path for DFTB+ install directory
-        :param string odin_path: Path to the ODIN executable [github.com/thomas-niehaus/odin]
         :param integer nthreads: Number of threads in the calculations
         :param string version: Version of DFTB+
     """
@@ -25,11 +24,6 @@ class DFTBplus(QM_calculator):
             error_message = "Install directory for DFTB+ not found!"
             error_vars = f"install_path = {self.install_path}"
             raise FileNotFoundError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
-        self.odin_path = odin_path
-        if (not os.path.isdir(self.odin_path)):
-            error_message = "Install directory for ODIN executable not found!"
-            error_vars = f"install_path = {self.odin_path}"
-            raise FileNotFoundError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")       
 
         self.nthreads = nthreads
         self.version = version
@@ -40,13 +34,13 @@ class DFTBplus(QM_calculator):
                 self.qm_path = os.path.join(self.install_path, "bin")
                 
                 # Attempt to locate dptools lib path 
-                pattern = self.install_path + "lib/python*/site-packages/dptools-*-py3.12.egg"
+                pattern = self.install_path + "lib/python*/site-packages/dptools-*-py3.*.egg*"
                 matches = glob.glob(pattern)
                 if len(matches) == 1:
                     full_path = matches[0]  
                     lib_dir = os.path.dirname(full_path)
                 else:
-                    error_message = "Please set proper Python version number manually in '$PYUNIXMDHOME/src/qm/dftbplus/dftbplus.py'!"
+                    error_message = "Please set proper Python version number manually in '$PYUNIXMDHOME/src/qm/dftbplus/dftbplus.py'!" 
                     error_vars = f"library directory = {lib_dir}"
                     raise FileNotFoundError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )") 
             else:

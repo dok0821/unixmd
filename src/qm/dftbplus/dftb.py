@@ -39,9 +39,9 @@ class DFTB(DFTBplus):
         l_range_sep=False, lc_method="MatrixBased", l_spin_pol=False, unpaired_elec=0., guess="h0", \
         guess_file="./charges.bin", elec_temp=0., mixer="Broyden", ex_symmetry="singlet", e_window=0., \
         k_point=[1, 1, 1], l_periodic=False, cell_length=[0., 0., 0., 0., 0., 0., 0., 0., 0.,], \
-                 sk_path="./", install_path="./", odin_path="./", mpi=False, mpi_path="./", nthreads=1, version="20.1"):
+        sk_path="./", install_path="./", odin_path="./", mpi=False, mpi_path="./", nthreads=1, version="20.1"):
         # Initialize DFTB+ common variables
-        super(DFTB, self).__init__(molecule, sk_path, install_path, odin_path, nthreads, version)
+        super(DFTB, self).__init__(molecule, sk_path, install_path, nthreads, version)
 
         # Initialize DFTB+ DFTB variables
         self.l_scc = l_scc
@@ -93,24 +93,59 @@ class DFTB(DFTBplus):
         molecule.l_nacme = True
         self.re_calc = True
 
+        # Define ODIN path to calculate NACME in TDDFTB
+        self.odin_path = odin_pathAdd commentMore actions
+        if (not os.path.isdir(self.odin_path)):
+            error_message = "Install directory for ODIN executable not found!"
+            error_vars = f"install_path = {self.odin_path}"
+            raise FileNotFoundError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
+        # ODIN: Get maximum l for each element (order as in geometry file)Add commentMore actions
+        elements = self.atom_type        
+#        with open('double.gen', 'r') as f:
+#            lines = f.readlines()
+#            elements = lines[1].strip().split()
+        self.maxAngString = ""
+        for element in elements:
+            if (max_l[element] == 's'):
+                maxAngString += '1 '
+            elif (max_l[element] == 'p'):
+                maxAngString += '2 '
+            elif (max_l[element] == 'd'):
+                maxAngString += '3 '
+            else:
+                error_message = "Number of basis for f orbital not implemented, see '$PYUNIXMDHOME/src/qm/dftbplus/dftb.py'!"
+                error_vars = f"maximum angular momentum = {max_l[element]}"
+                raise NotImplementedError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
+        
+        
         # Calculate number of basis for current system
         # Set new variable to decide the position of basis functions in terms of atoms
         # DFTB method considers only valence electrons, so core electrons should be removed
         core_elec = 0.
         self.nbasis = 0
         self.check_atom = [0]
+        input_odin = textwrap.dedent(f"""\
+          'double.gen'
+          '{self.sk_path}'
+          '-'
+          '.skf'
+        """) 
         for iat in range(molecule.nat_qm):
             # Check number of basis functions with respect to maximum angular momentum
+            maxAngString = ""
             max_ang = max_l[molecule.symbols[iat]]
             if (max_ang == 's'):
-                self.nbasis += 1
+                self.nbasis += '1 '
+                maxAngString += 1
             elif (max_ang == 'p'):
-                self.nbasis += 4
+                self.nbasis += '4 '
+                maxAngString += 2
             elif (max_ang == 'd'):
                 self.nbasis += 9
+                maxAngString += '3 '
             else:
                 error_message = "Number of basis for f orbital not implemented, see '$PYUNIXMDHOME/src/qm/dftbplus/dftb.py'!"
-                error_vars = f"current atom = {molecule.symbols[iat]}, max_ang = {max_ang}"
+                error_vars = f"current atom = {molecule.symbols[iat]}, max_ang = {max_ang}, maximum angular momentum = {max_l[element]}"
                 raise NotImplementedError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
             self.check_atom.append(self.nbasis)
             # Check number of core electrons with respect to atomic number
@@ -129,6 +164,11 @@ class DFTB(DFTBplus):
                 error_message = "Core electrons for current element not implemented, see '$PYUNIXMDHOME/src/qm/dftbplus/dftb.py'!"
                 error_vars = f"current atom = {molecule.symbols[iat]}, sym_index = {sym_index}"
                 raise NotImplementedError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
+        input_odin += maxAngString
+        input_odin += '\n'
+        file_name = "odin.in"
+        with open(file_name, "w") as f:
+            f.write(input_odin)
 
         # Set new variable to decide the position of atoms in terms of basis functions
         self.check_basis = []
@@ -517,23 +557,9 @@ class DFTB(DFTBplus):
               '-'
               '.skf'
             """)
-            # Get maximum l for each element (order as in geometry file)
-            with open('double.gen', 'r') as f:
-                lines = f.readlines()
-                elements = lines[1].strip().split()
-            maxAngString = ""
-            for element in elements:
-                if (max_l[element] == 's'):
-                    maxAngString += '1 '
-                elif (max_l[element] == 'p'):
-                    maxAngString += '2 '
-                elif (max_l[element] == 'd'):
-                    maxAngString += '3 '
-                else:
-                    error_message = "Number of basis for f orbital not implemented, see '$PYUNIXMDHOME/src/qm/dftbplus/dftb.py'!"
-                    error_vars = f"maximum angular momentum = {max_l[element]}"
-                    raise NotImplementedError (f"( {self.qm_method}.{call_name()} ) {error_message} ( {error_vars} )")
-            input_odin += maxAngString
+            
+
+            input_odin += self.maxAngString
             input_odin += '\n'
             file_name = "odin.in"
             with open(file_name, "w") as f:
@@ -607,9 +633,9 @@ class DFTB(DFTBplus):
 
         # Run ODIN code for calculation of overlap matrix
         ovr_command = os.path.join(self.odin_path, "odin")
-        ovr_command = f"{ovr_command} < odin.in > odin.log"
+        odin_command = f"{ovr_command} < odin.in > odin.log"
         if (self.calc_coupling and not calc_force_only and istep >= 0 and molecule.nst > 1):
-            os.system(ovr_command)
+            os.system(odin_command)
 
         # Copy dftb_in.hsd for target state
         file_name = f"dftb_in.hsd.geom.{bo_list[0]}"
