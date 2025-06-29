@@ -45,12 +45,13 @@ extensions = [
         libraries=libs, library_dirs=lib_dirs),
     Extension("libmqcxf", sources=sourcefile2, include_dirs=[np.get_include()]),
     Extension("libctmqc", sources=sourcefile3, include_dirs=[np.get_include()], \
-        libraries=libs, library_dirs=lib_dirs),
     Extension("libcioverlap", sources=sourcefile4, include_dirs=[np.get_include()], \
         libraries=libs, library_dirs=lib_dirs, extra_compile_args=extra_flags),
     # Electronic propagation in MQC_QED dynamics
-    Extension("libmqc_qed", sources=sourcefile1_qed, include_dirs=[np.get_include()]),
-    Extension("libmqcxf_qed", sources=sourcefile2_qed, include_dirs=[np.get_include()])
+    Extension("libmqc_qed", sources=sourcefile1_qed, include_dirs=[np.get_include()], \
+        libraries=libs, library_dirs=lib_dirs),
+    Extension("libmqcxf_qed", sources=sourcefile2_qed, include_dirs=[np.get_include()], \
+        libraries=libs, library_dirs=lib_dirs)
 ]
 
 setup(
