@@ -44,7 +44,7 @@ extensions = [
     Extension("libmqc", sources=sourcefile1,  include_dirs=[np.get_include()], \
         libraries=libs, library_dirs=lib_dirs),
     Extension("libmqcxf", sources=sourcefile2, include_dirs=[np.get_include()]),
-    Extension("libctmqc", sources=sourcefile3, include_dirs=[np.get_include()], \
+    Extension("libctmqc", sources=sourcefile3, include_dirs=[np.get_include()]),
     Extension("libcioverlap", sources=sourcefile4, include_dirs=[np.get_include()], \
         libraries=libs, library_dirs=lib_dirs, extra_compile_args=extra_flags),
     # Electronic propagation in MQC_QED dynamics
