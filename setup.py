@@ -31,7 +31,7 @@ if (math_lib_type == "lapack"):
     lib_dirs += [math_lib_dir]
     extra_flags += ["-D HAVE_LAPACK"]
 elif (math_lib_type == "mkl"):
-    libs += ["mkl_intel_lp64", "mkl_sequential", "mkl_core", ":libmkl_avx512.so.1"]
+    libs += ["mkl_intel_lp64", "mkl_sequential", "mkl_core", "mkl_rt"]
     lib_dirs += [math_lib_dir]
     extra_flags += ["-D HAVE_MKL"]
 else:
@@ -48,8 +48,10 @@ extensions = [
     Extension("libcioverlap", sources=sourcefile4, include_dirs=[np.get_include()], \
         libraries=libs, library_dirs=lib_dirs, extra_compile_args=extra_flags),
     # Electronic propagation in MQC_QED dynamics
-    Extension("libmqc_qed", sources=sourcefile1_qed, include_dirs=[np.get_include()]),
-    Extension("libmqcxf_qed", sources=sourcefile2_qed, include_dirs=[np.get_include()])
+    Extension("libmqc_qed", sources=sourcefile1_qed, include_dirs=[np.get_include()], \
+        libraries=libs, library_dirs=lib_dirs),
+    Extension("libmqcxf_qed", sources=sourcefile2_qed, include_dirs=[np.get_include()], \
+        libraries=libs, library_dirs=lib_dirs)
 ]
 
 setup(
