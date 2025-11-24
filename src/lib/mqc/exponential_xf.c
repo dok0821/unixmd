@@ -144,7 +144,7 @@ static void exponential_coef(int nat, int ndim, int nst, int nesteps, double dt,
         // Get hamiltonian contribution from decoherence term
         for(ist = 0; ist < nst; ist++){
             for(jst = 0; jst < nst; jst++){
-                h_dec[ist][jst] -= rho[jst][ist] * dec[jst][ist] * I;
+                h_dec[ist][jst] += rho[jst][ist] * dec[jst][ist];
             }
         }
 
@@ -164,7 +164,7 @@ static void exponential_coef(int nat, int ndim, int nst, int nesteps, double dt,
                     exponent[ist][jst] = (eenergy[ist] - eenergy[0]) * edt;
                 }
                 else{
-                    exponent[ist][jst] = (- 1.0 * I * dv[ist][jst] + h_dec[ist][jst]) * edt;
+                    exponent[ist][jst] = (- 1.0 * dv[ist][jst] * I - h_dec[ist][jst] * I) * edt;
                 }
             }
         }
