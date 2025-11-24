@@ -44,6 +44,7 @@ static void exponential_coef(int nat, int ndim, int nst, int nesteps, double dt,
     int verbosity, double *dotpopdec){
 
     double *eenergy = malloc(nst * sizeof(double));
+    double *pop = malloc(nst * sizeof(double));
     double **dv = malloc(nst * sizeof(double*));
     double **dec = malloc(nst * sizeof(double*));
     double complex **rho = malloc(nst * sizeof(double complex*));
@@ -123,13 +124,6 @@ static void exponential_coef(int nat, int ndim, int nst, int nesteps, double dt,
 
     for(iestep = 0; iestep < nesteps; iestep++){
 
-        // Initialize variables related to decoherence
-        for(iat = 0; iat < nat; iat++){
-            for(isp = 0; isp < ndim; isp++){
-                qmom[iat][isp] = 0.0;
-            }
-        }
-
         for(ist = 0; ist < nst; ist++){
             for(jst = 0; jst < nst; jst++){
                 dec[ist][jst] = 0.0;
@@ -141,37 +135,11 @@ static void exponential_coef(int nat, int ndim, int nst, int nesteps, double dt,
         for(ist = 0; ist < nst; ist++){
             for(jst = 0; jst < nst; jst++){
                 rho[jst][ist] = (conj(coef[jst]) * coef[ist]);
+                pop[ist] = creal(rho[ist][ist]);
             }
         }
 
-        // Get quantum momentum from auxiliary positions and sigma values
-        for(ist = 0; ist < nst; ist++){ 
-
-            if(l_coh[ist] == 1){
-                for(iat = 0; iat < nat; iat++){
-                    for(isp = 0; isp < ndim; isp++){
-                        qmom[iat][isp] += 0.5 * rho[ist][ist] * (pos[iat][isp] - aux_pos[ist][iat][isp])
-                            / pow(sigma[iat][isp], 2.0) / mass[iat];
-                    }
-                }
-            }
-        }
-
-        // Get decoherence term from quantum momentum and phase
-        for(ist = 0; ist < nst; ist++){
-            for(jst = ist + 1; jst < nst; jst++){ 
-
-                if(l_coh[ist] == 1 && l_coh[jst] == 1){
-                    for(iat = 0; iat < nat; iat++){
-                        for(isp = 0; isp < ndim; isp++){
-                            dec[ist][jst] += qmom[iat][isp] * (phase[ist][iat][isp] - phase[jst][iat][isp]);
-                        }
-                    }
-                }
-                dec[jst][ist] = - 1.0 * dec[ist][jst];
-
-            }
-        }
+        xf_dec(nat, ndim, nst, l_coh, mass, sigma, pos, qmom, aux_pos, phase, pop, dec);
 
         // Get hamiltonian contribution from decoherence term
         for(ist = 0; ist < nst; ist++){
